@@ -1,8 +1,8 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <ctime>
-#include <limits> // Added for numeric_limits
+#include <iostream>     // For input/output operations
+#include <string>       // For using std::string
+#include <vector>       // For using std::vector
+#include <ctime>        // For handling dates and time
+#include <limits>       // For numeric_limits (used with cin.ignore)
 
 using std::cout;
 using std::cin;
@@ -10,6 +10,7 @@ using std::endl;
 using std::string;
 using std::vector;
 
+// Book class represents a book in the library
 class Book {
 public:
     string Title;
@@ -17,6 +18,7 @@ public:
     string ISBN;
 };
 
+// Member class represents a library member
 class Member {
 public:
     string Name;
@@ -24,48 +26,51 @@ public:
     string MembershipID;
 };
 
+// Transaction class represents a book borrowing record
 class Transaction {
 public:
-    Member member;
-    Book book;
-    string DueDate;
-    bool Returned = false;
-    
-    double calculateLateFee() const;
-    static const double dailyLateFee;
+    Member member;      // The member borrowing the book
+    Book book;          // The borrowed book
+    string DueDate;     // Due date in YYYY-MM-DD format
+    bool Returned = false;  // Status of return
+
+    double calculateLateFee() const;     // Calculates late fee if any
+    static const double dailyLateFee;    // Daily late fee rate
 };
 
 const double Transaction::dailyLateFee = 0.50;
 
+// Calculates how late the book is and applies a fee if returned late
 double Transaction::calculateLateFee() const {
     if (Returned) return 0.0;
-    
+
     time_t now = time(0);
     tm* currentDate = localtime(&now);
-    
+
     int dueYear, dueMonth, dueDay;
     sscanf(DueDate.c_str(), "%d-%d-%d", &dueYear, &dueMonth, &dueDay);
-    
+
     tm dueTM = {0};
     dueTM.tm_year = dueYear - 1900;
     dueTM.tm_mon = dueMonth - 1;
     dueTM.tm_mday = dueDay;
     time_t dueTime = mktime(&dueTM);
-    
+
     double secondsLate = difftime(now, dueTime);
     int daysLate = static_cast<int>(secondsLate / (60 * 60 * 24));
-    
+
     return daysLate > 0 ? daysLate * dailyLateFee : 0.0;
 }
 
+// Adds books to the library vector from user input
 void CreateBook(vector<Book>& library) {
     char response;
-    
+
     while (true) {
         cout << "Would you like to add a book to the library? (y/n) " << endl;
         cin >> response;
         cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         if (response == 'y' || response == 'Y') {
             Book NewBook;
             cout << "Please enter name of book " << endl;
@@ -87,6 +92,7 @@ void CreateBook(vector<Book>& library) {
     }
 }
 
+// Registers new members to the library
 void RegisterMember(vector<Member>& members) {
     char response;
 
@@ -115,6 +121,7 @@ void RegisterMember(vector<Member>& members) {
     }
 }
 
+// Handles the borrowing process between a member and a book
 void BookTransaction(vector<Transaction>& transactions, const vector<Member>& members, const vector<Book>& books) {
     char response;
 
@@ -146,10 +153,10 @@ void BookTransaction(vector<Transaction>& transactions, const vector<Member>& me
             cin >> bookChoice;
             cin.ignore();
             NewTransaction.book = books[bookChoice-1];
-            
+
             cout << "Enter due date (YYYY-MM-DD): ";
             getline(cin, NewTransaction.DueDate);
-            
+
             transactions.push_back(NewTransaction);
         }
         else if (response == 'n' || response == 'N') {
@@ -161,12 +168,13 @@ void BookTransaction(vector<Transaction>& transactions, const vector<Member>& me
     }
 }
 
+// Handles returning a borrowed book and calculates late fees
 void ReturnBook(vector<Transaction>& transactions) {
     if (transactions.empty()) {
         cout << "No borrowings to return.\n";
         return;
     }
-    
+
     cout << "\n=== Return a Book ===\n";
     for (size_t i = 0; i < transactions.size(); i++) {
         if (!transactions[i].Returned) {
@@ -174,22 +182,20 @@ void ReturnBook(vector<Transaction>& transactions) {
                  << " borrowed by " << transactions[i].member.Name
                  << " (Due: " << transactions[i].DueDate << ")";
             
-            // Added late fee display
             double fee = transactions[i].calculateLateFee();
             if (fee > 0) cout << " - Late fee: $" << fee;
             cout << endl;
         }
     }
-    
+
     int choice;
     cout << "Enter borrowing number to mark as returned: ";
     cin >> choice;
     cin.ignore();
-    
+
     if (choice > 0 && choice <= transactions.size()) {
         transactions[choice-1].Returned = true;
-        
-        // Added late fee notification
+
         double fee = transactions[choice-1].calculateLateFee();
         if (fee > 0) {
             cout << "Late fee of $" << fee << " applied.\n";
@@ -200,6 +206,7 @@ void ReturnBook(vector<Transaction>& transactions) {
     }
 }
 
+// Displays all books currently in the library
 void DisplayAllBooks(const vector<Book>& library) {
     if (library.empty()) {
         cout << "The library has no books yet.\n";
@@ -215,6 +222,7 @@ void DisplayAllBooks(const vector<Book>& library) {
     }
 }
 
+// Displays all registered library members
 void DisplayAllMembers(const vector<Member>& members) {
     if (members.empty()) {
         cout << "The library has no members yet.\n";
@@ -230,6 +238,7 @@ void DisplayAllMembers(const vector<Member>& members) {
     }
 }
 
+// Allows users to search for books by title, author, or ISBN
 void SearchBooks(const vector<Book>& library) {
     if (library.empty()) {
         cout << "The library has no books yet.\n";
@@ -241,28 +250,28 @@ void SearchBooks(const vector<Book>& library) {
          << "2. Search by Author\n"
          << "3. Search by ISBN\n"
          << "Enter choice (1-3): ";
-    
+
     int choice;
     cin >> choice;
     cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    
+
     string searchTerm;
     cout << "Enter search term: ";
     getline(cin, searchTerm);
-    
+
     cout << "\n=== Search Results ===\n";
     bool found = false;
-    
+
     for (const auto& book : library) {
         bool match = false;
-        
+
         switch(choice) {
             case 1: match = (book.Title == searchTerm); break;
             case 2: match = (book.Author == searchTerm); break;
             case 3: match = (book.ISBN == searchTerm); break;
             default: cout << "Invalid choice.\n"; return;
         }
-        
+
         if (match) {
             cout << "Title: " << book.Title << endl
                  << "Author: " << book.Author << endl
@@ -271,17 +280,18 @@ void SearchBooks(const vector<Book>& library) {
             found = true;
         }
     }
-    
+
     if (!found) {
         cout << "No matching books found.\n";
     }
 }
 
+// Entry point of the program, displays the main menu and handles user choices
 int main() {
     vector<Book> library;
     vector<Member> members;
     vector<Transaction> transactions;
-    
+
     int choice;
     do {
         cout << "\n=== Library Management System ===" << endl;
@@ -296,7 +306,7 @@ int main() {
         cout << "Enter your choice: ";
         cin >> choice;
         cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         switch(choice) {
             case 1: CreateBook(library); break;
             case 2: RegisterMember(members); break;
@@ -309,6 +319,6 @@ int main() {
             default: cout << "Invalid choice. Please try again." << endl;
         }
     } while (choice != 8);
-    
+
     return 0;
 }
